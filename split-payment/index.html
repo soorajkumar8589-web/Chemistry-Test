@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Split Payment QR Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f6fb;color:#172033}.wrap{max-width:720px;margin:auto;padding:18px}.card{background:#fff;border-radius:18px;padding:20px;margin:14px 0;box-shadow:0 5px 22px #00000012}h1{margin:0 0 8px;font-size:26px}p{color:#667085}label{display:block;font-weight:700;margin:14px 0 7px}input{width:100%;padding:14px;border:1px solid #d0d5dd;border-radius:10px;font-size:16px}button{width:100%;border:0;border-radius:11px;padding:14px;background:#4f46e5;color:white;font-size:17px;font-weight:700;margin-top:16px}.hint{font-size:13px;color:#667085}.summary{font-weight:700}.qrgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}.qr{background:#fff;border:1px solid #e4e7ec;border-radius:16px;padding:16px;text-align:center}.qrcode{display:flex;justify-content:center;margin:12px 0}.amount{font-size:21px;font-weight:800}.copy{background:#eef2ff;color:#3730a3;font-size:14px;margin-top:8px;padding:10px}.error{color:#b42318;font-weight:700}
+</style>
+</head>
+<body><main class="wrap">
+<div class="card"><h1>💳 Split Payment QR</h1><p>कुल payment amount डालें। हर QR में अधिकतम ₹1,999 रखा जाएगा।</p>
+<label>UPI ID</label><input id="upi" placeholder="example@upi" autocomplete="off">
+<label>कुल Amount (₹)</label><input id="amount" type="number" min="1" step="0.01" placeholder="10000">
+<button onclick="generate()">QR Codes बनाएं</button><div id="msg"></div></div>
+<div id="result"></div>
+</main>
+<script>
+function esc(s){return String(s).replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]))}
+function generate(){
+ const upi=document.getElementById('upi').value.trim(); const total=Number(document.getElementById('amount').value); const msg=document.getElementById('msg'); const result=document.getElementById('result'); msg.className=''; result.innerHTML='';
+ if(!upi || !upi.includes('@')){msg.className='error';msg.textContent='कृपया valid UPI ID डालें।';return}
+ if(!Number.isFinite(total)||total<=0){msg.className='error';msg.textContent='कृपया valid amount डालें।';return}
+ let remaining=Math.round(total*100)/100, parts=[]; while(remaining>0){let part=Math.min(1999,remaining);parts.push(Number(part.toFixed(2)));remaining=Number((remaining-part).toFixed(2));}
+ result.innerHTML=`<div class="card"><div class="summary">कुल: ₹${total.toFixed(2)} &nbsp; | &nbsp; QR: ${parts.length}</div><p>हर QR की राशि ₹1,999 या उससे कम है।</p><div class="qrgrid" id="qrgrid"></div></div>`;
+ const grid=document.getElementById('qrgrid');
+ parts.forEach((part,i)=>{const box=document.createElement('div');box.className='qr';box.innerHTML=`<div><b>QR ${i+1}</b></div><div class="amount">₹${part.toFixed(2)}</div><div class="qrcode" id="qr${i}"></div><div class="hint">UPI payment</div><button class="copy" onclick="navigator.clipboard?.writeText('${part.toFixed(2)}')">Amount copy करें</button>`;grid.appendChild(box);new QRCode(document.getElementById('qr'+i),{text:`upi://pay?pa=${encodeURIComponent(upi)}&pn=Payment&am=${part.toFixed(2)}&cu=INR`,width:180,height:180});});
+}
+</script></body></html>
